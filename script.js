@@ -1,6 +1,6 @@
 // Supabase configuration
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://fdsewfyvozkcqztgnijh.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkc2V3Znl2b3prY3F6dGduaWpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA1ODY1NTQsImV4cCI6MjA1NjE2MjU1NH0.uW5Noc_ZHWsbMlH41-eUGPRqV9uxyAt5chlRPiEaJmE';
 
 // Initial data
 let transacoes = [];
