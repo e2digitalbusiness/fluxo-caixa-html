@@ -1,128 +1,921 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ASA Quality Service - Cash Flow</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <div class="container">
-    <header>
-      <h1>ASA Quality Service</h1>
-      <h2>Cash Flow System</h2>
-    </header>
-    
-    <main>
-      <section class="card">
-        <h3>Financial Summary</h3>
-        <div class="resumo">
-          <div class="item">
-            <span class="label">Income:</span>
-            <span id="totalReceitas" class="valor positivo">$0.00</span>
-          </div>
-          <div class="item">
-            <span class="label">Expenses:</span>
-            <span id="totalDespesas" class="valor negativo">$0.00</span>
-          </div>
-          <div class="item destaque">
-            <span class="label">Balance:</span>
-            <span id="saldoTotal" class="valor">$0.00</span>
-          </div>
-        </div>
-      </section>
-      
-      <section class="card">
-        <h3>Profit Distribution</h3>
-        <div class="distribuicao">
-          <div class="item">
-            <span class="label">Company Reserve (10%):</span>
-            <span id="reservaEmpresa" class="valor">$0.00</span>
-          </div>
-          <div class="item">
-            <span class="label">Carlos (45%):</span>
-            <span id="pagtoCarlos" class="valor">$0.00</span>
-          </div>
-          <div class="item">
-            <span class="label">Jonathan (45%):</span>
-            <span id="pagtoJonathan" class="valor">$0.00</span>
-          </div>
-        </div>
-      </section>
-      
-      <section class="card">
-        <h3>Add Transaction</h3>
-        <form id="formTransacao">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="data">Date:</label>
-              <input type="date" id="data" required>
-            </div>
-            <div class="form-group">
-              <label for="tipo">Type:</label>
-              <select id="tipo" required>
-                <option value="receita">Income</option>
-                <option value="despesa">Expense</option>
-              </select>
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="categoria">Category:</label>
-              <input type="text" id="categoria" placeholder="Ex: Materials, Service..." required>
-            </div>
-            <div class="form-group">
-              <label for="valor">Amount ($):</label>
-              <input type="number" id="valor" step="0.01" min="0.01" placeholder="0.00" required>
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group full">
-              <label for="descricao">Description:</label>
-              <input type="text" id="descricao" placeholder="Detailed description...">
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <button type="submit" class="btn-primary">Add</button>
-          </div>
-        </form>
-      </section>
-      
-      <section class="card">
-        <h3>Transactions</h3>
-        <div class="transacoes-container">
-          <table id="tabelaTransacoes">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Category</th>
-                <th>Description</th>
-                <th>Amount</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Transactions will be added here via JavaScript -->
-            </tbody>
-          </table>
-        </div>
-      </section>
-      
-      <section class="card">
-        <h3>Annual Report</h3>
-        <button id="btnRelatorio" class="btn-primary">Generate Annual Report</button>
-      </section>
-    </main>
-    
-    <footer>
-      <p>ASA Quality Service &copy; 2025 - Home and Commercial Remodeling and Renovation</p>
-    </footer>
-  </div>
+// Função para exportar relatório como PDF (simulado)
+  const exportarPDF = () => {
+    if (!relatorioAnualDados) return;
+    alert("Função de exportação para PDF iniciada. O arquivo será enviado para download em breve.");
+    // Em uma implementação real, aqui usaríamos uma biblioteca como jsPDF
+    // para gerar um PDF real com os dados do relatório
+  };import React, { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import _ from 'lodash';
+
+const FluxoDeCaixa = () => {
+  // Estado para armazenar dados da tabela estilo Excel
+  const [tabelaDados, setTabelaDados] = useState({
+    colunas: [
+      { id: 'data', nome: 'Data', tipo: 'data' },
+      { id: 'tipo', nome: 'Tipo', tipo: 'select', opcoes: ['Receita', 'Despesa'] },
+      { id: 'categoria', nome: 'Categoria', tipo: 'texto' },
+      { id: 'descricao', nome: 'Descrição', tipo: 'texto' },
+      { id: 'valor', nome: 'Valor ($)', tipo: 'numero' },
+      { id: 'formaPagamento', nome: 'Forma Pagto', tipo: 'select', opcoes: ['Dinheiro', 'Cheque', 'Transferência', 'Cartão', 'Outro'] },
+      { id: 'notas', nome: 'Observações', tipo: 'texto' }
+    ],
+    linhas: []
+  });
+
+  // Estado para controlar a semana atual
+  const [semanaAtual, setSemanaAtual] = useState({
+    inicio: "",
+    fim: "",
+    notas: ""
+  });
   
-  <script src="script.js"></script>
-</body>
-</html>
+  // Estado para armazenar semanas salvas
+  const [semanasSalvas, setSemanasSalvas] = useState([]);
+  
+  // Estado para notas gerais do relatório anual
+  const [notasGerais, setNotasGerais] = useState("");
+  
+  // Estado para nova linha sendo editada (última linha da tabela)
+  const [novaLinha, setNovaLinha] = useState({});
+  
+  // Inicializar a nova linha vazia
+  useEffect(() => {
+    const linha = {};
+    tabelaDados.colunas.forEach(coluna => {
+      linha[coluna.id] = coluna.tipo === 'select' ? coluna.opcoes[0] : '';
+    });
+    setNovaLinha(linha);
+  }, []);
+
+  // Função para adicionar linha à tabela
+  const adicionarLinha = () => {
+    if (!novaLinha.data || !novaLinha.valor) {
+      alert("Por favor, preencha pelo menos a data e o valor");
+      return;
+    }
+
+    const valor = parseFloat(novaLinha.valor);
+    if (isNaN(valor) || valor <= 0) {
+      alert("Por favor, insira um valor válido");
+      return;
+    }
+
+    const linhaCompleta = {
+      ...novaLinha,
+      id: Date.now().toString(),
+      valor: valor
+    };
+
+    setTabelaDados({
+      ...tabelaDados,
+      linhas: [...tabelaDados.linhas, linhaCompleta]
+    });
+
+    // Limpar a nova linha para próxima entrada
+    const linha = {};
+    tabelaDados.colunas.forEach(coluna => {
+      linha[coluna.id] = coluna.tipo === 'select' ? coluna.opcoes[0] : '';
+    });
+    setNovaLinha(linha);
+  };
+
+  // Função para remover linha da tabela
+  const removerLinha = (id) => {
+    setTabelaDados({
+      ...tabelaDados,
+      linhas: tabelaDados.linhas.filter(linha => linha.id !== id)
+    });
+  };
+
+  // Atualizar valor de célula na tabela
+  const atualizarCelula = (linhaId, colunaId, valor) => {
+    setTabelaDados({
+      ...tabelaDados,
+      linhas: tabelaDados.linhas.map(linha => {
+        if (linha.id === linhaId) {
+          return {
+            ...linha,
+            [colunaId]: colunaId === 'valor' ? (parseFloat(valor) || 0) : valor
+          };
+        }
+        return linha;
+      })
+    });
+  };
+
+  // Atualizar valor de célula na nova linha
+  const atualizarCelulaNova = (colunaId, valor) => {
+    setNovaLinha({
+      ...novaLinha,
+      [colunaId]: valor
+    });
+  };
+
+  // Função para definir a semana atual
+  const definirSemana = (e) => {
+    e.preventDefault();
+    if (!semanaAtual.inicio || !semanaAtual.fim) {
+      alert("Por favor, defina as datas de início e fim da semana");
+      return;
+    }
+
+    const novasSemanas = [...semanasSalvas];
+    const semanaExistente = novasSemanas.findIndex(
+      s => s.inicio === semanaAtual.inicio && s.fim === semanaAtual.fim
+    );
+
+    if (semanaExistente === -1) {
+      novasSemanas.push({
+        ...semanaAtual,
+        id: Date.now().toString(),
+        linhas: tabelaDados.linhas.filter(linha => {
+          const dataLinha = new Date(linha.data);
+          const dataInicio = new Date(semanaAtual.inicio);
+          const dataFim = new Date(semanaAtual.fim);
+          return dataLinha >= dataInicio && dataLinha <= dataFim;
+        })
+      });
+    } else {
+      novasSemanas[semanaExistente] = {
+        ...novasSemanas[semanaExistente],
+        notas: semanaAtual.notas,
+        linhas: tabelaDados.linhas.filter(linha => {
+          const dataLinha = new Date(linha.data);
+          const dataInicio = new Date(semanaAtual.inicio);
+          const dataFim = new Date(semanaAtual.fim);
+          return dataLinha >= dataInicio && dataLinha <= dataFim;
+        })
+      };
+    }
+
+    setSemanasSalvas(novasSemanas);
+    alert("Semana salva com sucesso!");
+  };
+
+  // Carregar semana selecionada
+  const carregarSemana = (semana) => {
+    setSemanaAtual({
+      inicio: semana.inicio,
+      fim: semana.fim,
+      notas: semana.notas || ""
+    });
+    
+    // Substituir as linhas atuais pelas da semana selecionada
+    if (semana.linhas) {
+      setTabelaDados({
+        ...tabelaDados,
+        linhas: semana.linhas
+      });
+    }
+  };
+
+  // Salvar notas gerais
+  const salvarNotasGerais = () => {
+    alert("Notas gerais salvas com sucesso!");
+  };
+
+  // Filtrar transações da semana atual
+  const transacoesDaSemana = () => {
+    if (!semanaAtual.inicio || !semanaAtual.fim) return tabelaDados.linhas;
+    
+    return tabelaDados.linhas.filter(linha => {
+      if (!linha.data) return false;
+      const dataLinha = new Date(linha.data);
+      const dataInicio = new Date(semanaAtual.inicio);
+      const dataFim = new Date(semanaAtual.fim);
+      return dataLinha >= dataInicio && dataLinha <= dataFim;
+    });
+  };
+
+  // Calcular totais da semana
+  const calculaTotaisSemana = () => {
+    const transacoes = transacoesDaSemana();
+    const receitas = transacoes
+      .filter(linha => linha.tipo === 'Receita')
+      .reduce((soma, linha) => soma + (parseFloat(linha.valor) || 0), 0);
+      
+    const despesas = transacoes
+      .filter(linha => linha.tipo === 'Despesa')
+      .reduce((soma, linha) => soma + (parseFloat(linha.valor) || 0), 0);
+     
+    const saldo = receitas - despesas;
+    const reservaEmpresa = saldo > 0 ? saldo * 0.10 : 0; // 10% para o caixa da empresa
+    const saldoSocios = saldo - reservaEmpresa; // Saldo restante para os sócios
+    const pagamentoCarlos = saldoSocios > 0 ? saldoSocios / 2 : 0; // 50% para Carlos
+    const pagamentoJonathan = saldoSocios > 0 ? saldoSocios / 2 : 0; // 50% para Jonathan
+      
+    return {
+      receitas,
+      despesas,
+      saldo,
+      reservaEmpresa,
+      pagamentoCarlos,
+      pagamentoJonathan
+    };
+  };
+
+  // Calcular totais anuais
+  const calculaTotaisAnuais = () => {
+    const receitas = tabelaDados.linhas
+      .filter(linha => linha.tipo === 'Receita')
+      .reduce((soma, linha) => soma + (parseFloat(linha.valor) || 0), 0);
+      
+    const despesas = tabelaDados.linhas
+      .filter(linha => linha.tipo === 'Despesa')
+      .reduce((soma, linha) => soma + (parseFloat(linha.valor) || 0), 0);
+    
+    const lucroLiquido = receitas - despesas;
+    const reservaEmpresaAnual = lucroLiquido > 0 ? lucroLiquido * 0.10 : 0; // 10% para o caixa da empresa
+    const lucroSocios = lucroLiquido - reservaEmpresaAnual; // Lucro restante para os sócios
+    const lucroCarlos = lucroSocios > 0 ? lucroSocios / 2 : 0; // 50% para Carlos
+    const lucroJonathan = lucroSocios > 0 ? lucroSocios / 2 : 0; // 50% para Jonathan
+      
+    return {
+      receitas,
+      despesas,
+      lucroLiquido,
+      reservaEmpresaAnual,
+      lucroCarlos,
+      lucroJonathan
+    };
+  };
+
+  // Estado para controlar visibilidade do relatório anual
+  const [relatorioAnualVisivel, setRelatorioAnualVisivel] = useState(false);
+  const [relatorioAnualDados, setRelatorioAnualDados] = useState(null);
+  
+  // Gerar relatório anual
+  const gerarRelatorioAnual = () => {
+    // Calcular por categoria
+    const receitasPorCategoria = _.groupBy(
+      tabelaDados.linhas.filter(linha => linha.tipo === 'Receita'),
+      'categoria'
+    );
+    
+    const despesasPorCategoria = _.groupBy(
+      tabelaDados.linhas.filter(linha => linha.tipo === 'Despesa'),
+      'categoria'
+    );
+    
+    // Processar dados por categoria para exibição
+    const receitasProcessadas = Object.entries(receitasPorCategoria).map(([categoria, itens]) => {
+      const total = itens.reduce((soma, item) => soma + parseFloat(item.valor || 0), 0);
+      return { categoria, total, quantidade: itens.length };
+    }).sort((a, b) => b.total - a.total);
+    
+    const despesasProcessadas = Object.entries(despesasPorCategoria).map(([categoria, itens]) => {
+      const total = itens.reduce((soma, item) => soma + parseFloat(item.valor || 0), 0);
+      return { categoria, total, quantidade: itens.length };
+    }).sort((a, b) => b.total - a.total);
+    
+    // Preparar dados de transações mensais
+    const transacoesPorMes = _.groupBy(tabelaDados.linhas, linha => {
+      const data = new Date(linha.data);
+      return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}`;
+    });
+    
+    const resumoMensal = Object.entries(transacoesPorMes).map(([mes, transacoes]) => {
+      const receitas = transacoes
+        .filter(t => t.tipo === 'Receita')
+        .reduce((soma, t) => soma + parseFloat(t.valor || 0), 0);
+        
+      const despesas = transacoes
+        .filter(t => t.tipo === 'Despesa')
+        .reduce((soma, t) => soma + parseFloat(t.valor || 0), 0);
+        
+      const lucro = receitas - despesas;
+      const reservaEmpresa = lucro > 0 ? lucro * 0.10 : 0;
+      const pagamentoCarlos = lucro > 0 ? (lucro - reservaEmpresa) / 2 : 0;
+      const pagamentoJonathan = lucro > 0 ? (lucro - reservaEmpresa) / 2 : 0;
+      
+      // Extrair ano e mês do formato YYYY-MM
+      const [ano, mesNum] = mes.split('-');
+      const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                          'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+      const nomeMes = nomesMeses[parseInt(mesNum) - 1];
+      
+      return {
+        mes: `${nomeMes}/${ano}`,
+        receitas,
+        despesas,
+        lucro,
+        reservaEmpresa,
+        pagamentoCarlos,
+        pagamentoJonathan
+      };
+    }).sort((a, b) => {
+      // Ordenar por mês/ano
+      const [mesA, anoA] = a.mes.split('/');
+      const [mesB, anoB] = b.mes.split('/');
+      const indiceA = nomesMeses.indexOf(mesA) + (parseInt(anoA) * 12);
+      const indiceB = nomesMeses.indexOf(mesB) + (parseInt(anoB) * 12);
+      return indiceA - indiceB;
+    });
+    
+    // Armazenar os dados do relatório para exibição
+    setRelatorioAnualDados({
+      totais: calculaTotaisAnuais(),
+      receitasPorCategoria: receitasProcessadas,
+      despesasPorCategoria: despesasProcessadas,
+      resumoMensal,
+      dataGeracao: new Date().toLocaleString()
+    });
+    
+    // Mostrar o relatório
+    setRelatorioAnualVisivel(true);
+  };
+  
+  // Função para exportar relatório como CSV
+  const exportarCSV = () => {
+    if (!relatorioAnualDados) return;
+    
+    // Criar conteúdo CSV para resumo mensal
+    let csvContent = "Relatório Anual ASA Quality Service - 2025\n\n";
+    csvContent += "RESUMO MENSAL\n";
+    csvContent += "Mês,Receitas,Despesas,Lucro,Reserva Empresa,Pagamento Carlos,Pagamento Jonathan\n";
+    
+    relatorioAnualDados.resumoMensal.forEach(mes => {
+      csvContent += `${mes.mes},${mes.receitas.toFixed(2)},${mes.despesas.toFixed(2)},${mes.lucro.toFixed(2)},`;
+      csvContent += `${mes.reservaEmpresa.toFixed(2)},${mes.pagamentoCarlos.toFixed(2)},${mes.pagamentoJonathan.toFixed(2)}\n`;
+    });
+    
+    csvContent += "\nRESUMO POR CATEGORIA DE RECEITA\n";
+    csvContent += "Categoria,Total,Quantidade\n";
+    relatorioAnualDados.receitasPorCategoria.forEach(cat => {
+      csvContent += `${cat.categoria},${cat.total.toFixed(2)},${cat.quantidade}\n`;
+    });
+    
+    csvContent += "\nRESUMO POR CATEGORIA DE DESPESA\n";
+    csvContent += "Categoria,Total,Quantidade\n";
+    relatorioAnualDados.despesasPorCategoria.forEach(cat => {
+      csvContent += `${cat.categoria},${cat.total.toFixed(2)},${cat.quantidade}\n`;
+    });
+    
+    csvContent += "\nTOTAIS ANUAIS\n";
+    csvContent += `Receitas Totais,${relatorioAnualDados.totais.receitas.toFixed(2)}\n`;
+    csvContent += `Despesas Totais,${relatorioAnualDados.totais.despesas.toFixed(2)}\n`;
+    csvContent += `Lucro Líquido,${relatorioAnualDados.totais.lucroLiquido.toFixed(2)}\n`;
+    csvContent += `Reserva Empresa (10%),${relatorioAnualDados.totais.reservaEmpresaAnual.toFixed(2)}\n`;
+    csvContent += `Lucro Carlos,${relatorioAnualDados.totais.lucroCarlos.toFixed(2)}\n`;
+    csvContent += `Lucro Jonathan,${relatorioAnualDados.totais.lucroJonathan.toFixed(2)}\n\n`;
+    
+    csvContent += `Relatório gerado em ${relatorioAnualDados.dataGeracao}\n`;
+    csvContent += "Para processamento de impostos na Flórida\n";
+    
+    // Criar um blob e link para download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `RelatorioAnual_ASAQualityService_2025.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Formatar valor como moeda
+  const formatarMoeda = (valor) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(valor);
+  };
+
+  const totaisSemana = calculaTotaisSemana();
+  const totaisAnuais = calculaTotaisAnuais();
+
+  // Renderizar célula de tabela de acordo com o tipo
+  const renderizarCelula = (linha, coluna) => {
+    const valor = linha[coluna.id];
+    
+    if (coluna.tipo === 'data') {
+      return <input 
+        type="date" 
+        value={valor || ''} 
+        onChange={(e) => atualizarCelula(linha.id, coluna.id, e.target.value)} 
+        className="w-full p-1 border rounded"
+      />;
+    } else if (coluna.tipo === 'numero') {
+      return <input 
+        type="number" 
+        step="0.01" 
+        value={valor || ''} 
+        onChange={(e) => atualizarCelula(linha.id, coluna.id, e.target.value)} 
+        className="w-full p-1 border rounded text-right"
+      />;
+    } else if (coluna.tipo === 'select') {
+      return <select 
+        value={valor || coluna.opcoes[0]} 
+        onChange={(e) => atualizarCelula(linha.id, coluna.id, e.target.value)} 
+        className="w-full p-1 border rounded"
+      >
+        {coluna.opcoes.map(opcao => (
+          <option key={opcao} value={opcao}>{opcao}</option>
+        ))}
+      </select>;
+    } else {
+      return <input 
+        type="text" 
+        value={valor || ''} 
+        onChange={(e) => atualizarCelula(linha.id, coluna.id, e.target.value)} 
+        className="w-full p-1 border rounded"
+      />;
+    }
+  };
+
+  // Renderizar célula da nova linha
+  const renderizarCelulaNova = (coluna) => {
+    const valor = novaLinha[coluna.id];
+    
+    if (coluna.tipo === 'data') {
+      return <input 
+        type="date" 
+        value={valor || ''} 
+        onChange={(e) => atualizarCelulaNova(coluna.id, e.target.value)} 
+        className="w-full p-1 border rounded"
+      />;
+    } else if (coluna.tipo === 'numero') {
+      return <input 
+        type="number" 
+        step="0.01" 
+        value={valor || ''} 
+        onChange={(e) => atualizarCelulaNova(coluna.id, e.target.value)} 
+        className="w-full p-1 border rounded text-right"
+      />;
+    } else if (coluna.tipo === 'select') {
+      return <select 
+        value={valor || coluna.opcoes[0]} 
+        onChange={(e) => atualizarCelulaNova(coluna.id, e.target.value)} 
+        className="w-full p-1 border rounded"
+      >
+        {coluna.opcoes.map(opcao => (
+          <option key={opcao} value={opcao}>{opcao}</option>
+        ))}
+      </select>;
+    } else {
+      return <input 
+        type="text" 
+        value={valor || ''} 
+        onChange={(e) => atualizarCelulaNova(coluna.id, e.target.value)} 
+        className="w-full p-1 border rounded"
+      />;
+    }
+  };
+
+  return (
+    <div className="bg-gray-100 min-h-screen p-4">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-3xl font-bold text-center mb-6 text-blue-800">
+          ASA Quality Service - Fluxo de Caixa
+        </h1>
+        
+        {/* Seleção de semana */}
+        <Card className="mb-6 bg-white shadow-md">
+          <CardContent className="p-6">
+            <h2 className="text-xl font-semibold mb-4 text-blue-700">Definir Semana</h2>
+            <form onSubmit={definirSemana} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Data Inicial:</label>
+                <input
+                  type="date"
+                  value={semanaAtual.inicio}
+                  onChange={(e) => setSemanaAtual({...semanaAtual, inicio: e.target.value})}
+                  className="w-full p-2 border rounded"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Data Final:</label>
+                <input
+                  type="date"
+                  value={semanaAtual.fim}
+                  onChange={(e) => setSemanaAtual({...semanaAtual, fim: e.target.value})}
+                  className="w-full p-2 border rounded"
+                  required
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium mb-1">Notas da Semana:</label>
+                <textarea
+                  value={semanaAtual.notas}
+                  onChange={(e) => setSemanaAtual({...semanaAtual, notas: e.target.value})}
+                  className="w-full p-2 border rounded h-24"
+                  placeholder="Adicione notas ou observações sobre esta semana..."
+                />
+              </div>
+              <div className="md:col-span-2 flex justify-end">
+                <button 
+                  type="submit" 
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Salvar Semana
+                </button>
+              </div>
+            </form>
+            
+            {/* Lista de semanas salvas */}
+            {semanasSalvas.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-lg font-medium mb-2">Semanas Salvas:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {semanasSalvas.map((semana) => (
+                    <button
+                      key={semana.id}
+                      onClick={() => carregarSemana(semana)}
+                      className="px-3 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
+                    >
+                      {new Date(semana.inicio).toLocaleDateString()} - {new Date(semana.fim).toLocaleDateString()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        {/* Sumário da semana atual */}
+        <Card className="mb-6 bg-white shadow-md">
+          <CardContent className="p-6">
+            <h2 className="text-xl font-semibold mb-4 text-blue-700">
+              {semanaAtual.inicio && semanaAtual.fim ? 
+                `Resumo: ${new Date(semanaAtual.inicio).toLocaleDateString()} - ${new Date(semanaAtual.fim).toLocaleDateString()}` :
+                "Resumo Geral"
+              }
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="bg-green-100 p-4 rounded-lg">
+                <h3 className="text-lg font-medium text-green-800">Total Receitas</h3>
+                <p className="text-2xl font-bold text-green-600">{formatarMoeda(totaisSemana.receitas)}</p>
+              </div>
+              <div className="bg-red-100 p-4 rounded-lg">
+                <h3 className="text-lg font-medium text-red-800">Total Despesas</h3>
+                <p className="text-2xl font-bold text-red-600">{formatarMoeda(totaisSemana.despesas)}</p>
+              </div>
+              <div className="bg-blue-100 p-4 rounded-lg">
+                <h3 className="text-lg font-medium text-blue-800">Saldo</h3>
+                <p className={`text-2xl font-bold ${totaisSemana.saldo >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                  {formatarMoeda(totaisSemana.saldo)}
+                </p>
+              </div>
+            </div>
+            
+            {/* Campos fixos para distribuição de lucros */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 bg-gray-50 p-4 rounded-lg">
+              <div className="text-center border-r border-gray-300 pr-2">
+                <h3 className="text-lg font-medium text-purple-800">Reserva Empresa (10%)</h3>
+                <p className="text-xl font-bold text-purple-600">{formatarMoeda(totaisSemana.reservaEmpresa)}</p>
+              </div>
+              <div className="text-center border-r border-gray-300 pr-2">
+                <h3 className="text-lg font-medium text-indigo-800">Pagamento Carlos (45%)</h3>
+                <p className="text-xl font-bold text-indigo-600">{formatarMoeda(totaisSemana.pagamentoCarlos)}</p>
+              </div>
+              <div className="text-center">
+                <h3 className="text-lg font-medium text-indigo-800">Pagamento Jonathan (45%)</h3>
+                <p className="text-xl font-bold text-indigo-600">{formatarMoeda(totaisSemana.pagamentoJonathan)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Tabela estilo Excel */}
+        <Card className="mb-6 bg-white shadow-md overflow-hidden">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-100">
+                    {tabelaDados.colunas.map(coluna => (
+                      <th key={coluna.id} className="p-2 text-left border">{coluna.nome}</th>
+                    ))}
+                    <th className="p-2 text-center border">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Linhas existentes */}
+                  {transacoesDaSemana().map(linha => (
+                    <tr key={linha.id} className={linha.tipo === 'Receita' ? 'bg-green-50' : 'bg-red-50'}>
+                      {tabelaDados.colunas.map(coluna => (
+                        <td key={`${linha.id}-${coluna.id}`} className="p-1 border">
+                          {renderizarCelula(linha, coluna)}
+                        </td>
+                      ))}
+                      <td className="p-1 border text-center">
+                        <button
+                          onClick={() => removerLinha(linha.id)}
+                          className="px-2 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+                        >
+                          Remover
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  
+                  {/* Nova linha para adicionar dados */}
+                  <tr className="bg-gray-50">
+                    {tabelaDados.colunas.map(coluna => (
+                      <td key={`nova-${coluna.id}`} className="p-1 border">
+                        {renderizarCelulaNova(coluna)}
+                      </td>
+                    ))}
+                    <td className="p-1 border text-center">
+                      <button
+                        onClick={adicionarLinha}
+                        className="px-2 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
+                      >
+                        Adicionar
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+                
+                {/* Rodapé com totais */}
+                <tfoot>
+                  <tr className="bg-gray-200 font-medium">
+                    <td colSpan={2} className="p-2 border text-right">Totais:</td>
+                    <td colSpan={2} className="p-2 border">
+                      Receitas: {formatarMoeda(totaisSemana.receitas)}
+                    </td>
+                    <td className="p-2 border text-right">
+                      {formatarMoeda(totaisSemana.saldo)}
+                    </td>
+                    <td colSpan={3} className="p-2 border">
+                      Despesas: {formatarMoeda(totaisSemana.despesas)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Relatório Anual */}
+        <Card className="mb-6 bg-white shadow-md">
+          <CardContent className="p-6">
+            <h2 className="text-xl font-semibold mb-4 text-blue-700">Relatório Anual 2025</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="bg-green-100 p-4 rounded-lg">
+                <h3 className="text-lg font-medium text-green-800">Total Receitas</h3>
+                <p className="text-2xl font-bold text-green-600">{formatarMoeda(totaisAnuais.receitas)}</p>
+              </div>
+              <div className="bg-red-100 p-4 rounded-lg">
+                <h3 className="text-lg font-medium text-red-800">Total Despesas</h3>
+                <p className="text-2xl font-bold text-red-600">{formatarMoeda(totaisAnuais.despesas)}</p>
+              </div>
+              <div className="bg-blue-100 p-4 rounded-lg">
+                <h3 className="text-lg font-medium text-blue-800">Lucro Líquido</h3>
+                <p className={`text-2xl font-bold ${totaisAnuais.lucroLiquido >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                  {formatarMoeda(totaisAnuais.lucroLiquido)}
+                </p>
+              </div>
+            </div>
+            
+            {/* Campos fixos para distribuição de lucros anuais */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div className="text-center border-r border-gray-300 pr-2">
+                <h3 className="text-lg font-medium text-purple-800">Reserva Empresa Anual (10%)</h3>
+                <p className="text-xl font-bold text-purple-600">{formatarMoeda(totaisAnuais.reservaEmpresaAnual)}</p>
+              </div>
+              <div className="text-center border-r border-gray-300 pr-2">
+                <h3 className="text-lg font-medium text-indigo-800">Lucro Anual Carlos (45%)</h3>
+                <p className="text-xl font-bold text-indigo-600">{formatarMoeda(totaisAnuais.lucroCarlos)}</p>
+              </div>
+              <div className="text-center">
+                <h3 className="text-lg font-medium text-indigo-800">Lucro Anual Jonathan (45%)</h3>
+                <p className="text-xl font-bold text-indigo-600">{formatarMoeda(totaisAnuais.lucroJonathan)}</p>
+              </div>
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Notas para Contabilidade:</label>
+              <textarea
+                value={notasGerais}
+                onChange={(e) => setNotasGerais(e.target.value)}
+                className="w-full p-2 border rounded h-24"
+                placeholder="Adicione notas ou observações importantes para a contabilidade..."
+              />
+              <div className="mt-2 flex justify-end">
+                <button
+                  onClick={salvarNotasGerais}
+                  className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+                >
+                  Salvar Notas
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex justify-center mt-4">
+              <button
+                onClick={gerarRelatorioAnual}
+                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
+              >
+                Gerar Relatório Anual para Contabilidade
+              </button>
+            </div>
+            
+            {/* Modal de Relatório Anual */}
+            {relatorioAnualVisivel && relatorioAnualDados && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div className="bg-white rounded-lg shadow-xl overflow-auto max-w-4xl w-full max-h-[90vh]">
+                  <div className="sticky top-0 bg-gray-100 p-4 border-b flex justify-between items-center">
+                    <h2 className="text-xl font-bold text-purple-800">Relatório Anual 2025 - ASA Quality Service</h2>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={exportarCSV}
+                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                      >
+                        Exportar CSV
+                      </button>
+                      <button
+                        onClick={exportarPDF}
+                        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      >
+                        Exportar PDF
+                      </button>
+                      <button
+                        onClick={() => setRelatorioAnualVisivel(false)}
+                        className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
+                      >
+                        Fechar
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-6">
+                    <p className="text-sm text-gray-500 mb-4">
+                      Relatório gerado em {relatorioAnualDados.dataGeracao} para processamento de impostos na Flórida.
+                    </p>
+                    
+                    {/* Totais Anuais */}
+                    <div className="mb-8">
+                      <h3 className="text-lg font-semibold mb-3 border-b pb-2">Totais Anuais</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-green-50 p-3 rounded border border-green-200">
+                          <h4 className="font-medium text-green-800">Receitas Totais</h4>
+                          <p className="text-xl font-bold text-green-600">
+                            {formatarMoeda(relatorioAnualDados.totais.receitas)}
+                          </p>
+                        </div>
+                        <div className="bg-red-50 p-3 rounded border border-red-200">
+                          <h4 className="font-medium text-red-800">Despesas Totais</h4>
+                          <p className="text-xl font-bold text-red-600">
+                            {formatarMoeda(relatorioAnualDados.totais.despesas)}
+                          </p>
+                        </div>
+                        <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                          <h4 className="font-medium text-blue-800">Lucro Líquido</h4>
+                          <p className="text-xl font-bold text-blue-600">
+                            {formatarMoeda(relatorioAnualDados.totais.lucroLiquido)}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                        <div className="bg-purple-50 p-3 rounded border border-purple-200">
+                          <h4 className="font-medium text-purple-800">Reserva Empresa (10%)</h4>
+                          <p className="text-xl font-bold text-purple-600">
+                            {formatarMoeda(relatorioAnualDados.totais.reservaEmpresaAnual)}
+                          </p>
+                        </div>
+                        <div className="bg-indigo-50 p-3 rounded border border-indigo-200">
+                          <h4 className="font-medium text-indigo-800">Lucro Carlos (45%)</h4>
+                          <p className="text-xl font-bold text-indigo-600">
+                            {formatarMoeda(relatorioAnualDados.totais.lucroCarlos)}
+                          </p>
+                        </div>
+                        <div className="bg-indigo-50 p-3 rounded border border-indigo-200">
+                          <h4 className="font-medium text-indigo-800">Lucro Jonathan (45%)</h4>
+                          <p className="text-xl font-bold text-indigo-600">
+                            {formatarMoeda(relatorioAnualDados.totais.lucroJonathan)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Resumo Mensal */}
+                    <div className="mb-8">
+                      <h3 className="text-lg font-semibold mb-3 border-b pb-2">Resumo Mensal</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse">
+                          <thead>
+                            <tr className="bg-gray-100">
+                              <th className="p-2 text-left border">Mês</th>
+                              <th className="p-2 text-right border">Receitas</th>
+                              <th className="p-2 text-right border">Despesas</th>
+                              <th className="p-2 text-right border">Lucro</th>
+                              <th className="p-2 text-right border">Reserva Empresa</th>
+                              <th className="p-2 text-right border">Pgto. Carlos</th>
+                              <th className="p-2 text-right border">Pgto. Jonathan</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {relatorioAnualDados.resumoMensal.map((mes, index) => (
+                              <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                <td className="p-2 border">{mes.mes}</td>
+                                <td className="p-2 border text-right text-green-600 font-medium">
+                                  {formatarMoeda(mes.receitas)}
+                                </td>
+                                <td className="p-2 border text-right text-red-600 font-medium">
+                                  {formatarMoeda(mes.despesas)}
+                                </td>
+                                <td className={`p-2 border text-right font-medium ${mes.lucro >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                                  {formatarMoeda(mes.lucro)}
+                                </td>
+                                <td className="p-2 border text-right text-purple-600 font-medium">
+                                  {formatarMoeda(mes.reservaEmpresa)}
+                                </td>
+                                <td className="p-2 border text-right text-indigo-600 font-medium">
+                                  {formatarMoeda(mes.pagamentoCarlos)}
+                                </td>
+                                <td className="p-2 border text-right text-indigo-600 font-medium">
+                                  {formatarMoeda(mes.pagamentoJonathan)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    
+                    {/* Receitas por Categoria */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                      <div>
+                        <h3 className="text-lg font-semibold mb-3 border-b pb-2 text-green-700">
+                          Receitas por Categoria
+                        </h3>
+                        <div className="overflow-y-auto max-h-64">
+                          <table className="w-full border-collapse">
+                            <thead className="sticky top-0 bg-white">
+                              <tr className="bg-green-50">
+                                <th className="p-2 text-left border">Categoria</th>
+                                <th className="p-2 text-right border">Total</th>
+                                <th className="p-2 text-right border">Qtd</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {relatorioAnualDados.receitasPorCategoria.map((cat, index) => (
+                                <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-green-50'}>
+                                  <td className="p-2 border">{cat.categoria || 'Sem categoria'}</td>
+                                  <td className="p-2 border text-right font-medium">
+                                    {formatarMoeda(cat.total)}
+                                  </td>
+                                  <td className="p-2 border text-right">
+                                    {cat.quantidade}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                      
+                      {/* Despesas por Categoria */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-3 border-b pb-2 text-red-700">
+                          Despesas por Categoria
+                        </h3>
+                        <div className="overflow-y-auto max-h-64">
+                          <table className="w-full border-collapse">
+                            <thead className="sticky top-0 bg-white">
+                              <tr className="bg-red-50">
+                                <th className="p-2 text-left border">Categoria</th>
+                                <th className="p-2 text-right border">Total</th>
+                                <th className="p-2 text-right border">Qtd</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {relatorioAnualDados.despesasPorCategoria.map((cat, index) => (
+                                <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-red-50'}>
+                                  <td className="p-2 border">{cat.categoria || 'Sem categoria'}</td>
+                                  <td className="p-2 border text-right font-medium">
+                                    {formatarMoeda(cat.total)}
+                                  </td>
+                                  <td className="p-2 border text-right">
+                                    {cat.quantidade}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="text-center text-sm text-gray-500 mt-8">
+                      Este relatório contém informações financeiras para uso fiscal.
+                      <br />
+                      ASA Quality Service - Remodelação e Renovação de Residências e Comércios
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default FluxoDeCaixa;
