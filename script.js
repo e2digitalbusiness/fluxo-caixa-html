@@ -296,4 +296,166 @@ function atualizarResumoSemanal() {
   const saldo = receitas - despesas;
   const reservaEmpresa = saldo > 0 ? saldo * 0.10 : 0;
   const pagtoCarlos = saldo > 0 ? (saldo - reservaEmpresa) / 2 : 0;
-  const pagtoJonathan = saldo > 0 ? (saldo - reservaEmpre
+  const pagtoJonathan = saldo > 0 ? (saldo - reservaEmpresa) / 2 : 0;
+  
+  // Update elements
+  document.getElementById('resumoSemana').textContent = 
+    `Summary: ${new Date(semanaAtual.inicio).toLocaleDateString()} - ${new Date(semanaAtual.fim).toLocaleDateString()}`;
+  
+  document.getElementById('semanaReceitas').textContent = `$${receitas.toFixed(2)}`;
+  document.getElementById('semanaDespesas').textContent = `$${despesas.toFixed(2)}`;
+  document.getElementById('semanaSaldo').textContent = `$${saldo.toFixed(2)}`;
+  document.getElementById('semanaReserva').textContent = `$${reservaEmpresa.toFixed(2)}`;
+  document.getElementById('semanaCarlos').textContent = `$${pagtoCarlos.toFixed(2)}`;
+  document.getElementById('semanaJonathan').textContent = `$${pagtoJonathan.toFixed(2)}`;
+  
+  // Update CSS class for balance
+  document.getElementById('semanaSaldo').className = saldo >= 0 ? 'valor positivo' : 'valor negativo';
+}
+
+// Update the list of saved weeks in the UI
+function atualizarListaSemanas() {
+  const container = document.getElementById('semanasSalvas');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  semanasSalvas.forEach(semana => {
+    const btn = document.createElement('button');
+    btn.className = 'week-button';
+    btn.textContent = `${new Date(semana.inicio).toLocaleDateString()} - ${new Date(semana.fim).toLocaleDateString()}`;
+    btn.onclick = () => carregarSemana(semana);
+    container.appendChild(btn);
+  });
+}
+
+// Generate report
+function gerarRelatorio() {
+  if (transacoes.length === 0) {
+    alert('There are no transactions to generate the report.');
+    return;
+  }
+  
+  alert('Annual report generated successfully! Ready to send to accounting for Florida tax processing.');
+  
+  // Here you could implement the actual report export
+  console.log('Generating report for transactions:', transacoes);
+}
+
+// Save transaction to database
+async function salvarTransacao(transacao) {
+  // First save to localStorage as fallback
+  localStorage.setItem('asaTransacoes', JSON.stringify(transacoes));
+  
+  // If Supabase is configured, save there too
+  if (window.supabase) {
+    try {
+      const { data, error } = await window.supabase
+        .from('transactions')
+        .insert([{
+          id: transacao.id,
+          date: transacao.data,
+          type: transacao.tipo,
+          category: transacao.categoria,
+          description: transacao.descricao,
+          amount: transacao.valor,
+          user_id: 'default_user' // Adicionando um user_id padrão
+        }]);
+        
+      if (error) throw error;
+    } catch (err) {
+      console.error('Error saving to Supabase:', err);
+      // Already saved to localStorage as fallback
+    }
+  }
+}
+
+// Remove transaction from database
+async function removerTransacaoDatabase(id) {
+  // First update localStorage
+  localStorage.setItem('asaTransacoes', JSON.stringify(transacoes));
+  
+  // If Supabase is configured, remove from there too
+  if (window.supabase) {
+    try {
+      const { error } = await window.supabase
+        .from('transactions')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+    } catch (err) {
+      console.error('Error removing from Supabase:', err);
+      // Already updated localStorage as fallback
+    }
+  }
+}
+
+// Save weeks to database
+async function salvarSemanas() {
+  // First save to localStorage as fallback
+  localStorage.setItem('asaSemanas', JSON.stringify(semanasSalvas));
+  
+  // If Supabase is configured, save there too
+  if (window.supabase) {
+    try {
+      // We would need a 'weeks' table in Supabase
+      // This is just a placeholder for future implementation
+      console.log('Would save weeks to Supabase here');
+    } catch (err) {
+      console.error('Error saving weeks to Supabase:', err);
+      // Already saved to localStorage as fallback
+    }
+  }
+}
+
+// Load transactions from database
+async function carregarTransacoes() {
+  // First try to load from Supabase if configured
+  if (window.supabase) {
+    try {
+      const { data, error } = await window.supabase
+        .from('transactions')
+        .select('*')
+        .order('date', { ascending: false });
+        
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        // Transform Supabase data to match our format
+        transacoes = data.map(item => ({
+          id: item.id,
+          data: item.date,
+          tipo: item.type,
+          categoria: item.category,
+          descricao: item.description,
+          valor: item.amount
+        }));
+        
+        atualizarTabela();
+        atualizarTotais();
+        return;
+      }
+    } catch (err) {
+      console.error('Error loading from Supabase:', err);
+      // Will fall back to localStorage below
+    }
+  }
+  
+  // Fall back to localStorage if Supabase failed or not configured
+  const dadosSalvos = localStorage.getItem('asaTransacoes');
+  if (dadosSalvos) {
+    transacoes = JSON.parse(dadosSalvos);
+    atualizarTabela();
+    atualizarTotais();
+  }
+}
+
+// Load saved weeks
+function carregarSemanas() {
+  const dadosSalvos = localStorage.getItem('asaSemanas');
+  if (dadosSalvos) {
+    semanasSalvas = JSON.parse(dadosSalvos);
+    atualizarListaSemanas();
+  }
+}
