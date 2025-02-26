@@ -1,22 +1,91 @@
-Aqui está o script.js traduzido para o inglês:
+// Supabase configuration
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
 
-```javascript
 // Initial data
 let transacoes = [];
+let semanaAtual = {
+  inicio: "",
+  fim: "",
+  notas: ""
+};
+let semanasSalvas = [];
 
 // DOM Elements
 const formTransacao = document.getElementById('formTransacao');
+const formSemana = document.getElementById('formSemana');
 const tabelaTransacoes = document.getElementById('tabelaTransacoes');
 const totalReceitas = document.getElementById('totalReceitas');
 const totalDespesas = document.getElementById('totalDespesas');
 const saldoTotal = document.getElementById('saldoTotal');
-const reservaEmpresa = document.getElementById('reservaEmpresa');
-const pagtoCarlos = document.getElementById('pagtoCarlos');
-const pagtoJonathan = document.getElementById('pagtoJonathan');
 const btnRelatorio = document.getElementById('btnRelatorio');
+const resumoSemanalCard = document.getElementById('resumoSemanalCard');
+
+// Initialize Supabase client
+document.addEventListener('DOMContentLoaded', function() {
+  inicializarSupabase();
+  
+  // Set up event listeners
+  if (formTransacao) {
+    formTransacao.addEventListener('submit', adicionarTransacao);
+  }
+  
+  if (formSemana) {
+    formSemana.addEventListener('submit', definirSemana);
+  }
+  
+  if (btnRelatorio) {
+    btnRelatorio.addEventListener('click', gerarRelatorio);
+  }
+  
+  const dataInicio = document.getElementById('dataInicio');
+  if (dataInicio) {
+    dataInicio.addEventListener('change', e => {
+      semanaAtual.inicio = e.target.value;
+    });
+  }
+  
+  const dataFim = document.getElementById('dataFim');
+  if (dataFim) {
+    dataFim.addEventListener('change', e => {
+      semanaAtual.fim = e.target.value;
+    });
+  }
+  
+  const notasSemana = document.getElementById('notasSemana');
+  if (notasSemana) {
+    notasSemana.addEventListener('input', e => {
+      semanaAtual.notas = e.target.value;
+    });
+  }
+  
+  // Hide weekly summary card initially
+  if (resumoSemanalCard) {
+    resumoSemanalCard.style.display = 'none';
+  }
+});
+
+// Initialize Supabase
+function inicializarSupabase() {
+  if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_KEY === 'YOUR_SUPABASE_ANON_KEY') {
+    console.warn('Supabase not configured. Using localStorage only.');
+    carregarTransacoes();
+    carregarSemanas();
+    return;
+  }
+  
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+  script.onload = function() {
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    carregarTransacoes();
+    carregarSemanas();
+  };
+  document.head.appendChild(script);
+}
 
 // Event for adding a new transaction
-formTransacao.addEventListener('submit', function(e) {
+function adicionarTransacao(e) {
   e.preventDefault();
   
   const data = document.getElementById('data').value;
@@ -49,10 +118,91 @@ formTransacao.addEventListener('submit', function(e) {
   // Update interface
   atualizarTabela();
   atualizarTotais();
+  if (semanaAtual.inicio && semanaAtual.fim) {
+    atualizarResumoSemanal();
+  }
   
-  // Save to localStorage
-  salvarTransacoes();
-});
+  // Save to database
+  salvarTransacao(novaTransacao);
+}
+
+// Set current week
+function definirSemana(e) {
+  e.preventDefault();
+  
+  if (!semanaAtual.inicio || !semanaAtual.fim) {
+    alert("Please set start and end dates for the week");
+    return;
+  }
+
+  const novasSemanas = [...semanasSalvas];
+  const semanaExistente = novasSemanas.findIndex(
+    s => s.inicio === semanaAtual.inicio && s.fim === semanaAtual.fim
+  );
+
+  const transacoesSemana = transacoesDaSemana();
+
+  if (semanaExistente === -1) {
+    // Add new week
+    novasSemanas.push({
+      ...semanaAtual,
+      id: Date.now().toString(),
+      transacoes: transacoesSemana
+    });
+  } else {
+    // Update existing week
+    novasSemanas[semanaExistente] = {
+      ...novasSemanas[semanaExistente],
+      notas: semanaAtual.notas,
+      transacoes: transacoesSemana
+    };
+  }
+
+  semanasSalvas = novasSemanas;
+  salvarSemanas();
+  atualizarListaSemanas();
+  atualizarResumoSemanal();
+  
+  // Show weekly summary card
+  if (resumoSemanalCard) {
+    resumoSemanalCard.style.display = 'block';
+  }
+  
+  alert("Week saved successfully!");
+}
+
+// Filter transactions for the current week
+function transacoesDaSemana() {
+  if (!semanaAtual.inicio || !semanaAtual.fim) return transacoes;
+  
+  return transacoes.filter(t => {
+    const dataTransacao = new Date(t.data);
+    const inicioSemana = new Date(semanaAtual.inicio);
+    const fimSemana = new Date(semanaAtual.fim);
+    return dataTransacao >= inicioSemana && dataTransacao <= fimSemana;
+  });
+}
+
+// Load a selected week
+function carregarSemana(semana) {
+  semanaAtual = {
+    inicio: semana.inicio,
+    fim: semana.fim,
+    notas: semana.notas || ""
+  };
+  
+  document.getElementById('dataInicio').value = semana.inicio;
+  document.getElementById('dataFim').value = semana.fim;
+  document.getElementById('notasSemana').value = semana.notas || "";
+  
+  // Update the UI to show weekly summary
+  atualizarResumoSemanal();
+  
+  // Show weekly summary card
+  if (resumoSemanalCard) {
+    resumoSemanalCard.style.display = 'block';
+  }
+}
 
 // Function to update the table
 function atualizarTabela() {
@@ -92,10 +242,18 @@ function atualizarTabela() {
 
 // Function to remove transaction
 function removerTransacao(id) {
+  // Remove from local array
   transacoes = transacoes.filter(t => t.id !== id);
+  
+  // Update UI
   atualizarTabela();
   atualizarTotais();
-  salvarTransacoes();
+  if (semanaAtual.inicio && semanaAtual.fim) {
+    atualizarResumoSemanal();
+  }
+  
+  // Remove from database
+  removerTransacaoDatabase(id);
 }
 
 // Function to update totals
@@ -111,53 +269,31 @@ function atualizarTotais() {
     
   const saldo = receitas - despesas;
   
-  // Calculate distribution
-  const reserva = saldo > 0 ? saldo * 0.10 : 0; // 10% for company
-  const valorSocios = saldo - reserva;
-  const valorCarlos = valorSocios > 0 ? valorSocios / 2 : 0; // 45% of total (50% of remainder)
-  const valorJonathan = valorSocios > 0 ? valorSocios / 2 : 0; // 45% of total (50% of remainder)
-  
   // Update interface
   totalReceitas.textContent = `$${receitas.toFixed(2)}`;
   totalDespesas.textContent = `$${despesas.toFixed(2)}`;
   saldoTotal.textContent = `$${saldo.toFixed(2)}`;
-  reservaEmpresa.textContent = `$${reserva.toFixed(2)}`;
-  pagtoCarlos.textContent = `$${valorCarlos.toFixed(2)}`;
-  pagtoJonathan.textContent = `$${valorJonathan.toFixed(2)}`;
   
   // Update CSS classes
   saldoTotal.className = saldo >= 0 ? 'valor positivo' : 'valor negativo';
 }
 
-// Save transactions to localStorage
-function salvarTransacoes() {
-  localStorage.setItem('asaTransacoes', JSON.stringify(transacoes));
-}
-
-// Load transactions from localStorage
-function carregarTransacoes() {
-  const dadosSalvos = localStorage.getItem('asaTransacoes');
-  if (dadosSalvos) {
-    transacoes = JSON.parse(dadosSalvos);
-    atualizarTabela();
-    atualizarTotais();
-  }
-}
-
-// Generate report
-btnRelatorio.addEventListener('click', function() {
-  if (transacoes.length === 0) {
-    alert('There are no transactions to generate the report.');
-    return;
-  }
+// Update weekly summary
+function atualizarResumoSemanal() {
+  if (!semanaAtual.inicio || !semanaAtual.fim) return;
   
-  alert('Annual report generated successfully! Ready to send to accounting for Florida tax processing.');
+  const transacoes = transacoesDaSemana();
   
-  // Here you could implement the actual report export
-  console.log('Generating report for transactions:', transacoes);
-});
-
-// Initialize
-carregarTransacoes();
-```
-
+  // Calculate totals
+  const receitas = transacoes
+    .filter(t => t.tipo === 'receita')
+    .reduce((soma, t) => soma + t.valor, 0);
+    
+  const despesas = transacoes
+    .filter(t => t.tipo === 'despesa')
+    .reduce((soma, t) => soma + t.valor, 0);
+    
+  const saldo = receitas - despesas;
+  const reservaEmpresa = saldo > 0 ? saldo * 0.10 : 0;
+  const pagtoCarlos = saldo > 0 ? (saldo - reservaEmpresa) / 2 : 0;
+  const pagtoJonathan = saldo > 0 ? (saldo - reservaEmpre
