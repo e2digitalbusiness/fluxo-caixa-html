@@ -1,7 +1,10 @@
-// Dados iniciais
+Aqui está o script.js traduzido para o inglês:
+
+```javascript
+// Initial data
 let transacoes = [];
 
-// Elementos DOM
+// DOM Elements
 const formTransacao = document.getElementById('formTransacao');
 const tabelaTransacoes = document.getElementById('tabelaTransacoes');
 const totalReceitas = document.getElementById('totalReceitas');
@@ -12,7 +15,7 @@ const pagtoCarlos = document.getElementById('pagtoCarlos');
 const pagtoJonathan = document.getElementById('pagtoJonathan');
 const btnRelatorio = document.getElementById('btnRelatorio');
 
-// Evento para adicionar nova transação
+// Event for adding a new transaction
 formTransacao.addEventListener('submit', function(e) {
   e.preventDefault();
   
@@ -23,11 +26,11 @@ formTransacao.addEventListener('submit', function(e) {
   const valor = parseFloat(document.getElementById('valor').value);
   
   if (!data || !valor || valor <= 0) {
-    alert('Por favor, preencha todos os campos corretamente.');
+    alert('Please fill in all fields correctly.');
     return;
   }
   
-  // Criar nova transação
+  // Create new transaction
   const novaTransacao = {
     id: Date.now().toString(),
     data,
@@ -37,21 +40,21 @@ formTransacao.addEventListener('submit', function(e) {
     valor
   };
   
-  // Adicionar à lista
+  // Add to the list
   transacoes.push(novaTransacao);
   
-  // Limpar formulário
+  // Clear form
   formTransacao.reset();
   
-  // Atualizar interface
+  // Update interface
   atualizarTabela();
   atualizarTotais();
   
-  // Salvar no localStorage
+  // Save to localStorage
   salvarTransacoes();
 });
 
-// Função para atualizar a tabela
+// Function to update the table
 function atualizarTabela() {
   const tbody = tabelaTransacoes.querySelector('tbody');
   tbody.innerHTML = '';
@@ -60,25 +63,25 @@ function atualizarTabela() {
     const tr = document.createElement('tr');
     tr.className = `transacao-${transacao.tipo}`;
     
-    // Formatar data
+    // Format date
     const data = new Date(transacao.data);
-    const dataFormatada = data.toLocaleDateString('pt-BR');
+    const dataFormatada = data.toLocaleDateString('en-US');
     
     tr.innerHTML = `
       <td>${dataFormatada}</td>
-      <td>${transacao.tipo === 'receita' ? 'Receita' : 'Despesa'}</td>
+      <td>${transacao.tipo === 'receita' ? 'Income' : 'Expense'}</td>
       <td>${transacao.categoria}</td>
       <td>${transacao.descricao || '-'}</td>
       <td>$${transacao.valor.toFixed(2)}</td>
       <td>
-        <button class="btn-remover" data-id="${transacao.id}">Remover</button>
+        <button class="btn-remover" data-id="${transacao.id}">Remove</button>
       </td>
     `;
     
     tbody.appendChild(tr);
   });
   
-  // Adicionar evento aos botões de remover
+  // Add event to remove buttons
   document.querySelectorAll('.btn-remover').forEach(btn => {
     btn.addEventListener('click', function() {
       const id = this.getAttribute('data-id');
@@ -87,7 +90,7 @@ function atualizarTabela() {
   });
 }
 
-// Função para remover transação
+// Function to remove transaction
 function removerTransacao(id) {
   transacoes = transacoes.filter(t => t.id !== id);
   atualizarTabela();
@@ -95,9 +98,9 @@ function removerTransacao(id) {
   salvarTransacoes();
 }
 
-// Função para atualizar totais
+// Function to update totals
 function atualizarTotais() {
-  // Calcular receitas e despesas
+  // Calculate income and expenses
   const receitas = transacoes
     .filter(t => t.tipo === 'receita')
     .reduce((soma, t) => soma + t.valor, 0);
@@ -108,13 +111,13 @@ function atualizarTotais() {
     
   const saldo = receitas - despesas;
   
-  // Calcular distribuição
-  const reserva = saldo > 0 ? saldo * 0.10 : 0; // 10% para empresa
+  // Calculate distribution
+  const reserva = saldo > 0 ? saldo * 0.10 : 0; // 10% for company
   const valorSocios = saldo - reserva;
-  const valorCarlos = valorSocios > 0 ? valorSocios / 2 : 0; // 45% do total (50% do que sobra)
-  const valorJonathan = valorSocios > 0 ? valorSocios / 2 : 0; // 45% do total (50% do que sobra)
+  const valorCarlos = valorSocios > 0 ? valorSocios / 2 : 0; // 45% of total (50% of remainder)
+  const valorJonathan = valorSocios > 0 ? valorSocios / 2 : 0; // 45% of total (50% of remainder)
   
-  // Atualizar na interface
+  // Update interface
   totalReceitas.textContent = `$${receitas.toFixed(2)}`;
   totalDespesas.textContent = `$${despesas.toFixed(2)}`;
   saldoTotal.textContent = `$${saldo.toFixed(2)}`;
@@ -122,16 +125,16 @@ function atualizarTotais() {
   pagtoCarlos.textContent = `$${valorCarlos.toFixed(2)}`;
   pagtoJonathan.textContent = `$${valorJonathan.toFixed(2)}`;
   
-  // Atualizar classes CSS
+  // Update CSS classes
   saldoTotal.className = saldo >= 0 ? 'valor positivo' : 'valor negativo';
 }
 
-// Salvar transações no localStorage
+// Save transactions to localStorage
 function salvarTransacoes() {
   localStorage.setItem('asaTransacoes', JSON.stringify(transacoes));
 }
 
-// Carregar transações do localStorage
+// Load transactions from localStorage
 function carregarTransacoes() {
   const dadosSalvos = localStorage.getItem('asaTransacoes');
   if (dadosSalvos) {
@@ -141,18 +144,20 @@ function carregarTransacoes() {
   }
 }
 
-// Gerar relatório
+// Generate report
 btnRelatorio.addEventListener('click', function() {
   if (transacoes.length === 0) {
-    alert('Não há transações para gerar o relatório.');
+    alert('There are no transactions to generate the report.');
     return;
   }
   
-  alert('Relatório anual gerado com sucesso! Pronto para enviar à contabilidade para processamento de impostos na Flórida.');
+  alert('Annual report generated successfully! Ready to send to accounting for Florida tax processing.');
   
-  // Aqui você poderia implementar a exportação real do relatório
-  console.log('Gerando relatório para as transações:', transacoes);
+  // Here you could implement the actual report export
+  console.log('Generating report for transactions:', transacoes);
 });
 
-// Inicializar
+// Initialize
 carregarTransacoes();
+```
+
