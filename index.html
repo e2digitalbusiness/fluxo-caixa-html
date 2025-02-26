@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASA Quality Service - Fluxo de Caixa</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>ASA Quality Service</h1>
+      <h2>Sistema de Fluxo de Caixa</h2>
+    </header>
+    
+    <main>
+      <section class="card">
+        <h3>Resumo Financeiro</h3>
+        <div class="resumo">
+          <div class="item">
+            <span class="label">Receitas:</span>
+            <span id="totalReceitas" class="valor positivo">$0.00</span>
+          </div>
+          <div class="item">
+            <span class="label">Despesas:</span>
+            <span id="totalDespesas" class="valor negativo">$0.00</span>
+          </div>
+          <div class="item destaque">
+            <span class="label">Saldo:</span>
+            <span id="saldoTotal" class="valor">$0.00</span>
+          </div>
+        </div>
+      </section>
+      
+      <section class="card">
+        <h3>Distribuição de Lucros</h3>
+        <div class="distribuicao">
+          <div class="item">
+            <span class="label">Reserva Empresa (10%):</span>
+            <span id="reservaEmpresa" class="valor">$0.00</span>
+          </div>
+          <div class="item">
+            <span class="label">Carlos (45%):</span>
+            <span id="pagtoCarlos" class="valor">$0.00</span>
+          </div>
+          <div class="item">
+            <span class="label">Jonathan (45%):</span>
+            <span id="pagtoJonathan" class="valor">$0.00</span>
+          </div>
+        </div>
+      </section>
+      
+      <section class="card">
+        <h3>Adicionar Transação</h3>
+        <form id="formTransacao">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="data">Data:</label>
+              <input type="date" id="data" required>
+            </div>
+            <div class="form-group">
+              <label for="tipo">Tipo:</label>
+              <select id="tipo" required>
+                <option value="receita">Receita</option>
+                <option value="despesa">Despesa</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="categoria">Categoria:</label>
+              <input type="text" id="categoria" placeholder="Ex: Material, Serviço..." required>
+            </div>
+            <div class="form-group">
+              <label for="valor">Valor ($):</label>
+              <input type="number" id="valor" step="0.01" min="0.01" placeholder="0.00" required>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group full">
+              <label for="descricao">Descrição:</label>
+              <input type="text" id="descricao" placeholder="Descrição detalhada...">
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <button type="submit" class="btn-primary">Adicionar</button>
+          </div>
+        </form>
+      </section>
+      
+      <section class="card">
+        <h3>Transações</h3>
+        <div class="transacoes-container">
+          <table id="tabelaTransacoes">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Categoria</th>
+                <th>Descrição</th>
+                <th>Valor</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- As transações serão adicionadas aqui via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+      
+      <section class="card">
+        <h3>Relatório Anual</h3>
+        <button id="btnRelatorio" class="btn-primary">Gerar Relatório Anual</button>
+      </section>
+    </main>
+    
+    <footer>
+      <p>ASA Quality Service &copy; 2025 - Remodelação e Renovação de Residências e Comércios</p>
+    </footer>
+  </div>
+  
+  <script src="script.js"></script>
+</body>
+</html>
